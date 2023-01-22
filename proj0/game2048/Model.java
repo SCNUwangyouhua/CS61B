@@ -95,7 +95,7 @@ public class Model extends Observable {
     }
 
     /** Tilt the board toward SIDE. Return true iff this changes the board.
-     *
+     第四个做 tilt 较难
      * 1. If two Tile objects are adjacent in the direction of motion and have
      *    the same value, they are merged into one Tile of twice the original
      *    value and that new value is added to the score instance variable
@@ -106,6 +106,11 @@ public class Model extends Observable {
      *    value, then the leading two tiles in the direction of motion merge,
      *    and the trailing tile does not.
      * */
+
+    //tilt中所有的movement都是借助 Board类 中的 move函数 完成
+    //board中所有tiles都需要通过使用 Board类 中的 tile函数 完成
+    //每次调用tilt函数 只调用一次move函数
+
     public boolean tilt(Side side) {
         boolean changed;
         changed = false;
@@ -113,13 +118,88 @@ public class Model extends Observable {
         // TODO: Modify this.board (and perhaps this.score) to account
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
+        this.board.setViewingPerspective(side);
+        int size = board.size();
+        for (int col = 0; col < size; col++) {
+            // Step1. move every non-empty tile in order
+            // [x, 2, 2, x] -> [2, 2, x, x]
+            // skip merging this step.
+            for (int row = size - 1; row >= 0; row--) {
+                Tile t = board.tile(col, row);
+                if (t != null) {
+                    // find nextPos which is null
+                    int nextPos = 3;
+                    while (nextPos >= row) {
+                        if (board.tile(col, nextPos) == null) {
+                            break;
+                        }
+                        nextPos--;
+                    }
+                    // check if nextPos is a legal position
+                    if (nextPos >= row) {
+                        board.move(col, nextPos, t);
+                        changed = true;
+                    }
+                }
+            }
+            // Step2. try to merge
+            // [2, 2, x, x] -> [4, x, x, x]
+            for (int row = 3; row >= 0; row--) {
+                Tile curTile = board.tile(col, row);
+                int nextLine = row - 1;
+                if (nextLine < 0) {
+                    break;
+                }
+                Tile nextTile = board.tile(col, nextLine);
+                if (curTile == null || nextTile == null) {
+                    break;
+                }
+                int nextValue = nextTile.value();
+                if (nextValue == curTile.value()) {
+                    board.move(col, row, nextTile);
+                    score += curTile.value() * 2;
+                    for (int p = nextLine - 1; p >= 0; p--) {
+                        Tile tt = board.tile(col, p);
+                        if (tt == null) {
+                            break;
+                        }
+                        if (p < size) {
+                            board.move(col, p + 1, tt);
+                        }
+                    }
+                    changed = true;
+                }
+            }
+        }
+        this.board.setViewingPerspective(Side.NORTH);
 
         checkGameOver();
         if (changed) {
-            setChanged();
+            setChanged();//如果board中有发生改变，那么setchanged函数就会告诉GUI有新东西需要draw
         }
         return changed;
     }
+
+    /*
+     * you might have a helper function that processes a single column of the board,
+     * since each column is handled independently.
+     * Or you might have a helper function that can return a desired row value.
+     */
+/*    public static int GetRowValue(int Column, int Row, int MaxRow, Board nowBoard)
+    {
+        int toReturn;
+        for (int r = MaxRow; r >= 0; r--)
+        {
+            if (nowBoard.tile(Column, r) == null)
+                return r;
+
+            if (nowBoard.tile(Column, r).value() == nowBoard.tile(Column, Row).value())
+                return r;
+        }
+        return Row;
+    }*/
+
+    //--------------------------------------------------------------------
 
     /** Checks if the game is over and sets the gameOver variable
      *  appropriately.
@@ -136,8 +216,19 @@ public class Model extends Observable {
     /** Returns true if at least one space on the Board is empty.
      *  Empty spaces are stored as null.
      * */
+    //第一个做下面这个 比较简单
+    //读Board类中的tile(int col, int row)函数和size()函数，其他用不到
     public static boolean emptySpaceExists(Board b) {
         // TODO: Fill in this function.
+        //没有耐心的看传入的参数
+        for (int c = 0; c < b.size(); c += 1)
+        {
+            for (int r = 0; r < b.size(); r += 1)
+            {
+                if (b.tile(c, r) == null)
+                    return true;
+            }
+        }
         return false;
     }
 
@@ -146,8 +237,21 @@ public class Model extends Observable {
      * Maximum valid value is given by MAX_PIECE. Note that
      * given a Tile object t, we get its value with t.value().
      */
+    //第二个做下面这个 比较简单
     public static boolean maxTileExists(Board b) {
         // TODO: Fill in this function.
+        //不要用数值2048 用已经定义好的常量MAX_PIECE
+        for (int c = 0; c < b.size(); c+=1)
+        {
+            for (int r = 0; r < b.size(); r+=1)
+            {
+                if (b.tile(c, r) == null)
+                    continue;
+
+                if (b.tile(c, r).value() == MAX_PIECE)
+                    return true;
+            }
+        }
         return false;
     }
 
@@ -157,8 +261,26 @@ public class Model extends Observable {
      * 1. There is at least one empty space on the board.
      * 2. There are two adjacent tiles with the same value.
      */
+    //第三个做下面这个 稍微有一点难度
     public static boolean atLeastOneMoveExists(Board b) {
         // TODO: Fill in this function.
+        for (int c = 0; c < b.size(); c+= 1)
+        {
+            for (int r = 0; r < b.size(); r+=1)
+            {
+                if (b.tile(c, r) == null)
+                    return true;
+                int Bvalue = b.tile(c, r).value();
+                if (c - 1 >= 0 && b.tile(c-1, r).value() == Bvalue )
+                    return true;
+                else if (r - 1 >= 0 && b.tile(c, r-1).value() == Bvalue)
+                    return true;
+                else if(c + 1 < b.size() && b.tile(c + 1, r).value() == Bvalue)
+                    return true;
+                else if(r + 1 < b.size() && b.tile(c, r + 1).value() == Bvalue)
+                    return true;
+            }
+        }
         return false;
     }
 
