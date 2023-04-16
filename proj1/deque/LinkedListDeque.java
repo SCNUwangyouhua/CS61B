@@ -151,7 +151,7 @@ public class LinkedListDeque<Item> implements Iterable<Item>, Deque<Item> {
             p = sentinel.next;
         }
         public boolean hasNext() {
-            return p == sentinel;
+            return p.next != sentinel;
         }
         public Item next() {
             Item returnItem = p.item;
@@ -186,16 +186,16 @@ public class LinkedListDeque<Item> implements Iterable<Item>, Deque<Item> {
          if (o == null && size != 0) {
              return false;
          }
-         if (!(o instanceof LinkedListDeque)) {
+         if (!(o instanceof Deque)) {
              return false;
          }
-         LinkedListDeque<Item> oDeque = (LinkedListDeque<Item>) o;
+         Deque<Item> oDeque = (Deque<Item>) o;
          if (oDeque.size() != this.size()) {
              return false;
          }
 
          for (int i = 0; i < size; ++i) {
-             if (oDeque.get(i) != this.get(i)){
+             if (!(oDeque.get(i).equals(get(i)))){
                  return false;
              }
          }
