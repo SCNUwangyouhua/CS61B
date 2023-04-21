@@ -4,7 +4,6 @@ import org.junit.Test;
 import edu.princeton.cs.algs4.StdRandom;
 import static org.junit.Assert.*;
 
-
 /** Performs some basic linked list tests. */
 public class LinkedListDequeTest {
 
